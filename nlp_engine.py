@@ -9,6 +9,7 @@ import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import string
 import re
+import requests
 
 # Download VADER lexicon if needed
 try:
@@ -21,17 +22,19 @@ _sentiment_pipeline = None
 _vader = None
 
 
-def get_sentiment_pipeline():
-    """Lazy-load the HuggingFace sentiment pipeline."""
-    global _sentiment_pipeline
-    if _sentiment_pipeline is None:
-        from transformers import pipeline
-        _sentiment_pipeline = pipeline(
-            "sentiment-analysis",
-            model="distilbert-base-uncased-finetuned-sst-2-english",
-            top_k=None
-        )
-    return _sentiment_pipeline
+def query_huggingface_api(text: str):
+    """Query the free HuggingFace API instead of running model locally."""
+    try:
+        API_URL = "https://api-inference.huggingface.co/models/distilbert-base-uncased-finetuned-sst-2-english"
+        response = requests.post(API_URL, json={"inputs": text}, timeout=4)
+        if response.status_code == 200:
+            results = response.json()
+            if isinstance(results, list) and len(results) > 0 and isinstance(results[0], list):
+                # Format: [[{'label': 'POSITIVE', 'score': 0.99}, ...]]
+                return {r["label"]: r["score"] for r in results[0]}
+        return None
+    except Exception:
+        return None
 
 
 def get_vader():
@@ -50,20 +53,21 @@ def analyze_sentiment(text: str) -> dict:
     # Truncate very long texts for the transformer (max 512 tokens)
     truncated = text[:2000]
 
-    # HuggingFace transformer scores
-    pipe = get_sentiment_pipeline()
-    hf_results = pipe(truncated)[0]
-    hf_scores = {r["label"]: r["score"] for r in hf_results}
-    hf_positive = hf_scores.get("POSITIVE", 0)
-    hf_negative = hf_scores.get("NEGATIVE", 0)
-
+    # Try HuggingFace API first
+    hf_scores = query_huggingface_api(truncated)
+    
     # VADER scores
     vader = get_vader()
     vader_scores = vader.polarity_scores(text)
 
-    # Blend: 60% transformer, 40% VADER
-    positive = 0.6 * hf_positive + 0.4 * vader_scores["pos"]
-    negative = 0.6 * hf_negative + 0.4 * vader_scores["neg"]
+    if hf_scores:
+        # Blend: 60% transformer, 40% VADER
+        positive = 0.6 * hf_scores.get("POSITIVE", 0) + 0.4 * vader_scores["pos"]
+        negative = 0.6 * hf_scores.get("NEGATIVE", 0) + 0.4 * vader_scores["neg"]
+    else:
+        # Fallback entirely to VADER if free API is rate-limited
+        positive = vader_scores["pos"]
+        negative = vader_scores["neg"]
     neutral = vader_scores["neu"]  # VADER neutral is more reliable
     compound = vader_scores["compound"]
 
