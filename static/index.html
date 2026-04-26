@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="BiasLens — AI-Powered News Bias Detection using NLP sentiment analysis">
+  <title>BiasLens — AI-Powered News Analysis</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📰</text></svg>">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-brand">
+      <div class="header-logo">📰</div>
+      <span class="header-name">BiasLens</span>
+      <span class="header-tag">v1.0</span>
+    </div>
+
+    <nav class="header-nav" id="tabBar">
+      <button class="header-tab active" data-tab="analyze" onclick="switchTab('analyze')">
+        <span class="header-tab-icon">🔍</span> Analyze
+      </button>
+      <button class="header-tab" data-tab="scores" onclick="switchTab('scores')">
+        <span class="header-tab-icon">📊</span> Scores
+      </button>
+      <button class="header-tab" data-tab="deep" onclick="switchTab('deep')">
+        <span class="header-tab-icon">🧠</span> Deep Analysis
+      </button>
+      <button class="header-tab" data-tab="nlp" onclick="switchTab('nlp')">
+        <span class="header-tab-icon">📈</span> NLP Radar
+      </button>
+    </nav>
+
+    <div class="header-right">
+      <div class="header-badge"><div class="header-badge-dot"></div> NLP Engine</div>
+    </div>
+  </header>
+
+  <!-- Layout -->
+  <div class="app-layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-group">
+        <div class="sidebar-label">Sources</div>
+        <div class="sidebar-item" data-source="BBC News" onclick="fillSource(this)">
+          <span class="sidebar-item-icon">📡</span><span class="sidebar-item-text">BBC News</span>
+        </div>
+        <div class="sidebar-item" data-source="Fox News" onclick="fillSource(this)">
+          <span class="sidebar-item-icon">📺</span><span class="sidebar-item-text">Fox News</span>
+        </div>
+        <div class="sidebar-item" data-source="Reuters" onclick="fillSource(this)">
+          <span class="sidebar-item-icon">🌐</span><span class="sidebar-item-text">Reuters</span>
+        </div>
+        <div class="sidebar-item" data-source="CNN" onclick="fillSource(this)">
+          <span class="sidebar-item-icon">📰</span><span class="sidebar-item-text">CNN</span>
+        </div>
+        <div class="sidebar-item" data-source="Al Jazeera" onclick="fillSource(this)">
+          <span class="sidebar-item-icon">🕌</span><span class="sidebar-item-text">Al Jazeera</span>
+        </div>
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-label">History</div>
+        <div id="historyList">
+          <div class="empty" style="padding:0.8rem">
+            <div style="font-size:1rem;opacity:0.3">📭</div>
+            <div style="font-size:0.7rem;color:var(--text-4)">No analyses yet</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-label">Stats</div>
+        <div class="sidebar-stat">
+          <div class="sidebar-stat-value" id="statTotal">0</div>
+          <div class="sidebar-stat-label">Total Analyses</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <div class="main-inner">
+
+        <!-- Panel: Analyze -->
+        <div class="panel active" id="panel-analyze">
+          <div class="page-title">New Analysis</div>
+          <div class="page-desc">Submit articles from different sources on the same topic to compare bias.</div>
+
+          <div class="form-block">
+            <div class="field-label">Topic</div>
+            <input type="text" id="topicInput" placeholder="e.g., Climate Change Policy 2026">
+          </div>
+
+          <div id="articleEntries"></div>
+
+          <div class="btn-row">
+            <button class="btn btn-outline" onclick="addArticleEntry()">+ Add Source</button>
+            <button class="btn btn-primary" id="analyzeBtn" onclick="runAnalysis()">
+              ⚡ Analyze Bias
+            </button>
+          </div>
+        </div>
+
+        <!-- Panel: Scores -->
+        <div class="panel" id="panel-scores">
+          <div class="page-title">Analysis Results</div>
+          <div class="page-desc" id="scoreDesc">Sentiment and bias scores across sources.</div>
+          <div class="metrics" id="metricsGrid">
+            <div class="empty" style="grid-column:1/-1">
+              <div class="empty-icon">📊</div>
+              <div class="empty-text">Run an analysis to see results</div>
+            </div>
+          </div>
+          <div id="sourceTable"></div>
+        </div>
+
+        <!-- Panel: Deep -->
+        <div class="panel" id="panel-deep">
+          <div class="page-title">Keyword Breakdown</div>
+          <div class="page-desc">Positive and negative keywords extracted by VADER per source.</div>
+          <div id="deepContent">
+            <div class="empty">
+              <div class="empty-icon">🧠</div>
+              <div class="empty-text">Run an analysis to see keyword breakdown</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel: NLP -->
+        <div class="panel" id="panel-nlp">
+          <div class="page-title">Sentiment Radar</div>
+          <div class="page-desc">Visual comparison of sentiment dimensions across sources.</div>
+          <div id="nlpContent">
+            <div class="empty">
+              <div class="empty-icon">📈</div>
+              <div class="empty-text">Run an analysis to see radar chart</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-overlay" id="loadingOverlay" style="display:none">
+    <div class="loader"></div>
+    <div class="loading-label">Running NLP analysis…</div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
